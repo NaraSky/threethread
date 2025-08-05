@@ -1,5 +1,6 @@
 package com.lb.threethread.core.executor;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * </p>
  */
 @Data
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class ThreadPoolExecutorHolder {
 
     /**
@@ -28,7 +29,7 @@ public class ThreadPoolExecutorHolder {
      * 用于唯一标识一个线程池实例，在整个系统中保持唯一性
      * </p>
      */
-    private final String threadPoolId;
+    private String threadPoolId;
 
     /**
      * 线程池执行器实例
@@ -36,7 +37,7 @@ public class ThreadPoolExecutorHolder {
      * 实际的线程池执行器，负责任务的调度和执行
      * </p>
      */
-    private final ThreadPoolExecutor executor;
+    private ThreadPoolExecutor executor;
 
     /**
      * 线程池属性参数
@@ -44,5 +45,5 @@ public class ThreadPoolExecutorHolder {
      * 存储线程池的配置信息，用于监控和动态调整参数
      * </p>
      */
-    private final ThreadPoolExecutorProperties executorProperties;
+    private ThreadPoolExecutorProperties executorProperties;
 }

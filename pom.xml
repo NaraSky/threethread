@@ -11,6 +11,8 @@
     <modules>
         <module>threethread-core</module>
         <module>threethread-spring-base</module>
+        <module>threethread-config-starter</module>
+        <module>threethread-config-starter/threethread-config-cloud-nacos-starter</module>
     </modules>
 
     <properties>

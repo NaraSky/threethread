@@ -1,8 +1,11 @@
 package com.lb.threethread.spring.base.configuration;
 
+import com.lb.threethread.spring.base.support.ApplicationContextHolder;
 import com.lb.threethread.spring.base.support.OneThreadBeanPostProcessor;
 import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
 
 /**
  * 动态线程池基础配置类
@@ -18,18 +21,17 @@ import org.springframework.context.annotation.Bean;
  * </p>
  */
 @Configurable
+@EnableConfigurationProperties(BootstrapConfigProperties.class)
 public class OneThreadBaseConfiguration {
 
-    /**
-     * 创建动态线程池Bean后置处理器Bean
-     * <p>
-     * 用于自动识别和注册Spring容器中的动态线程池实例
-     * </p>
-     *
-     * @return OneThreadBeanPostProcessor实例
-     */
     @Bean
-    public OneThreadBeanPostProcessor oneThreadBeanPostProcessor() {
-        return new OneThreadBeanPostProcessor();
+    public ApplicationContextHolder applicationContextHolder() {
+        return new ApplicationContextHolder();
+    }
+
+    @Bean
+    @DependsOn("applicationContextHolder")
+    public OneThreadBeanPostProcessor oneThreadBeanPostProcessor(BootstrapConfigProperties properties) {
+        return new OneThreadBeanPostProcessor(properties);
     }
 }
