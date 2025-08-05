@@ -26,6 +26,11 @@ import lombok.experimental.Accessors;
 public class ThreadPoolExecutorProperties {
 
     /**
+     * 线程池唯一标识
+     */
+    private String threadPoolId;
+
+    /**
      * 核心线程数
      * <p>
      * 线程池中保持的最小线程数，即使这些线程处于空闲状态也不会被销毁，
