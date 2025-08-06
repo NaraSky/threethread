@@ -26,31 +26,73 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 动态线程池刷新器抽象类
+ * <p>
+ * 主要功能：
+ * 1. 提供统一的线程池动态刷新框架
+ * 2. 解析配置文件并转换为线程池配置对象
+ * 3. 比较配置差异并更新线程池参数
+ * 4. 记录线程池参数变更日志
+ * </p>
+ * <p>
+ * 设计特点：
+ * 1. 实现ApplicationRunner接口，在Spring Boot应用启动完成后执行注册监听器
+ * 2. 使用模板方法模式，将具体的监听器注册逻辑交给子类实现
+ * 3. 提供beforeRegister和afterRegister钩子方法，供子类扩展
+ * 4. 集成Spring Boot Configuration Processor，支持配置绑定
+ * </p>
+ */
 @Slf4j
 @RequiredArgsConstructor
 public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationRunner {
 
+    /**
+     * 启动配置属性，包含各种配置中心的配置信息
+     */
     protected final BootstrapConfigProperties properties;
 
     /**
      * 注册配置变更监听器，由子类实现具体逻辑
+     * <p>
+     * 不同配置中心（如Nacos、Apollo）有不同的监听机制
+     * 子类需要根据具体的配置中心实现监听器注册逻辑
+     * </p>
      *
-     * @throws Exception
+     * @throws Exception 监听器注册异常
      */
     protected abstract void registerListener() throws Exception;
 
     /**
-     * 默认空实现，子类可以按需覆盖
+     * 注册监听器前的处理方法，默认空实现，子类可以按需覆盖
+     * <p>
+     * 可用于执行注册前的准备工作，如初始化资源、校验配置等
+     * </p>
      */
     protected void beforeRegister() {
     }
 
     /**
-     * 默认空实现，子类可以按需覆盖
+     * 注册监听器后的处理方法，默认空实现，子类可以按需覆盖
+     * <p>
+     * 可用于执行注册后的清理工作或通知逻辑
+     * </p>
      */
     protected void afterRegister() {
     }
 
+    /**
+     * Spring Boot应用启动完成后执行的方法
+     * <p>
+     * 执行顺序：
+     * 1. 调用beforeRegister方法
+     * 2. 调用registerListener方法注册监听器
+     * 3. 调用afterRegister方法
+     * </p>
+     * 
+     * @param args 应用启动参数
+     * @throws Exception 启动过程中的异常
+     */
     @Override
     public void run(ApplicationArguments args) throws Exception {
         beforeRegister();
@@ -58,20 +100,45 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
         afterRegister();
     }
 
+    /**
+     * 线程池参数变更日志格式模板
+     */
     public static final String CHANGE_THREAD_POOL_TEXT = "[{}] Dynamic thread pool parameter changed:"
-            + "\n    corePoolSize: {}"
-            + "\n    maximumPoolSize: {}"
-            + "\n    capacity: {}"
-            + "\n    keepAliveTime: {}"
-            + "\n    rejectedType: {}"
-            + "\n    allowCoreThreadTimeOut: {}";
+            + "\n    corePoolSize: {}"              // 核心线程数变更信息
+            + "\n    maximumPoolSize: {}"           // 最大线程数变更信息
+            + "\n    capacity: {}"                  // 队列容量变更信息
+            + "\n    keepAliveTime: {}"             // 空闲线程存活时间变更信息
+            + "\n    rejectedType: {}"              // 拒绝策略变更信息
+            + "\n    allowCoreThreadTimeOut: {}";   // 核心线程是否允许超时变更信息
+    
+    /**
+     * 配置变更前后值的分隔符模板
+     */
     public static final String CHANGE_DELIMITER = "%s => %s";
 
+    /**
+     * 刷新线程池配置
+     * <p>
+     * 处理流程：
+     * 1. 解析配置文件内容为Map对象
+     * 2. 将Map对象绑定到BootstrapConfigProperties配置对象
+     * 3. 遍历线程池配置列表
+     * 4. 检查配置是否发生变化
+     * 5. 如果发生变化则更新线程池参数
+     * 6. 记录参数变更日志
+     * </p>
+     *
+     * @param configInfo 配置文件内容
+     */
     @SneakyThrows
     public void refreshThreadPoolProperties(String configInfo) {
+        // 解析配置文件内容为Map对象
         Map<Object, Object> configInfoMap = ConfigParserHandler.getInstance().parseConfig(configInfo, properties.getConfigFileType());
+        // 创建配置属性源
         ConfigurationPropertySource sources = new MapConfigurationPropertySource(configInfoMap);
+        // 创建配置绑定器
         Binder binder = new Binder(sources);
+        // 将配置绑定到BootstrapConfigProperties对象
         BootstrapConfigProperties refresherProperties = binder.bind(BootstrapConfigProperties.PREFIX, Bindable.ofInstance(properties)).get();
 
         // 检查远程配置文件是否包含线程池配置
@@ -106,6 +173,18 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
         }
     }
 
+    /**
+     * 检查线程池配置是否发生变化
+     * <p>
+     * 实现原理：
+     * 1. 从线程池注册中心获取当前线程池持有者
+     * 2. 获取当前线程池执行器和原始配置
+     * 3. 比较各项配置是否发生变化
+     * </p>
+     * 
+     * @param remoteProperties 远程配置属性
+     * @return 配置是否发生变化
+     */
     private boolean hasThreadPoolConfigChanged(ThreadPoolExecutorProperties remoteProperties) {
         String threadPoolId = remoteProperties.getThreadPoolId();
         ThreadPoolExecutorHolder holder = OneThreadRegistry.getHolder(threadPoolId);
@@ -119,16 +198,29 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
         return hasDifference(originalProperties, remoteProperties, executor);
     }
 
+    /**
+     * 根据远程配置更新线程池参数
+     * <p>
+     * 更新顺序和注意事项：
+     * 1. 核心线程数和最大线程数需要按特定顺序更新，避免出现临时的非法状态
+     * 2. 先更新拒绝策略、存活时间等简单参数
+     * 3. 最后更新队列容量（仅对可调整容量队列生效）
+     * </p>
+     * 
+     * @param remoteProperties 远程配置属性
+     */
     private void updateThreadPoolFromRemoteConfig(ThreadPoolExecutorProperties remoteProperties) {
         String threadPoolId = remoteProperties.getThreadPoolId();
         ThreadPoolExecutorHolder holder = OneThreadRegistry.getHolder(threadPoolId);
         ThreadPoolExecutor executor = holder.getExecutor();
         ThreadPoolExecutorProperties originalProperties = holder.getExecutorProperties();
 
+        // 更新核心线程数和最大线程数
         Integer remoteCorePoolSize = remoteProperties.getCorePoolSize();
         Integer remoteMaximumPoolSize = remoteProperties.getMaximumPoolSize();
         if (remoteCorePoolSize != null && remoteMaximumPoolSize != null) {
             int originalMaximumPoolSize = executor.getMaximumPoolSize();
+            // 如果新的核心线程数大于原始最大线程数，需要先调整最大线程数
             if (remoteCorePoolSize > originalMaximumPoolSize) {
                 executor.setMaximumPoolSize(remoteMaximumPoolSize);
                 executor.setCorePoolSize(remoteCorePoolSize);
@@ -137,6 +229,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
                 executor.setMaximumPoolSize(remoteMaximumPoolSize);
             }
         } else {
+            // 单独更新最大线程数或核心线程数
             if (remoteMaximumPoolSize != null) {
                 executor.setMaximumPoolSize(remoteMaximumPoolSize);
             }
@@ -145,17 +238,20 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
             }
         }
 
+        // 更新核心线程是否允许超时设置
         if (remoteProperties.getAllowCoreThreadTimeOut() != null &&
                 !Objects.equals(remoteProperties.getAllowCoreThreadTimeOut(), originalProperties.getAllowCoreThreadTimeOut())) {
             executor.allowCoreThreadTimeOut(remoteProperties.getAllowCoreThreadTimeOut());
         }
 
+        // 更新拒绝策略
         if (remoteProperties.getRejectedHandler() != null &&
                 !Objects.equals(remoteProperties.getRejectedHandler(), originalProperties.getRejectedHandler())) {
             RejectedExecutionHandler handler = RejectedPolicyTypeEnum.createPolicy(remoteProperties.getRejectedHandler());
             executor.setRejectedExecutionHandler(handler);
         }
 
+        // 更新线程空闲时间
         if (remoteProperties.getKeepAliveTime() != null &&
                 !Objects.equals(remoteProperties.getKeepAliveTime(), originalProperties.getKeepAliveTime())) {
             executor.setKeepAliveTime(remoteProperties.getKeepAliveTime(), TimeUnit.SECONDS);
@@ -169,6 +265,14 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
         }
     }
 
+    /**
+     * 检查线程池各项配置是否发生变化
+     * 
+     * @param originalProperties 原始配置属性
+     * @param remoteProperties 远程配置属性
+     * @param executor 线程池执行器
+     * @return 是否存在配置差异
+     */
     private boolean hasDifference(ThreadPoolExecutorProperties originalProperties, ThreadPoolExecutorProperties remoteProperties, ThreadPoolExecutor executor) {
         return isChanged(originalProperties.getCorePoolSize(), remoteProperties.getCorePoolSize())
                 || isChanged(originalProperties.getMaximumPoolSize(), remoteProperties.getMaximumPoolSize())
@@ -178,10 +282,29 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
                 || isQueueCapacityChanged(originalProperties, remoteProperties, executor);
     }
 
+    /**
+     * 检查单个配置项是否发生变化
+     * 
+     * @param before 变更前的值
+     * @param after 变更后的值
+     * @param <T> 配置项类型
+     * @return 是否发生变化
+     */
     private <T> boolean isChanged(T before, T after) {
         return after != null && !Objects.equals(before, after);
     }
 
+    /**
+     * 检查队列容量是否发生变化
+     * <p>
+     * 注意：仅对ResizableCapacityLinkedBlockingQueue类型的队列生效
+     * </p>
+     * 
+     * @param originalProperties 原始配置属性
+     * @param remoteProperties 远程配置属性
+     * @param executor 线程池执行器
+     * @return 队列容量是否发生变化
+     */
     private boolean isQueueCapacityChanged(ThreadPoolExecutorProperties originalProperties,
                                            ThreadPoolExecutorProperties remoteProperties,
                                            ThreadPoolExecutor executor) {

@@ -13,13 +13,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>com.lb.threethread</groupId>
-            <artifactId>threethread-spring-base</artifactId>
+            <artifactId>threethread-common-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
 
