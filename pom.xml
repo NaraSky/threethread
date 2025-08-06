@@ -13,6 +13,8 @@
         <module>threethread-spring-base</module>
         <module>threethread-config-starter</module>
         <module>threethread-config-starter/threethread-config-cloud-nacos-starter</module>
+        <module>threethread-example</module>
+        <module>threethread-example/threethread-cloud-nacos-example</module>
     </modules>
 
     <properties>

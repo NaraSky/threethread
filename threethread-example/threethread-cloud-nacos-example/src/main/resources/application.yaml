@@ -1,0 +1,17 @@
+server:
+  port: 18080
+
+spring:
+  application:
+    name: onethread-cloud-nacos-example
+  config:
+    import: optional:nacos:onethread-cloud-nacos-example.yaml
+  cloud:
+    nacos:
+      config:
+        server-addr: 117.72.33.162:8848
+        file-extension: yaml
+        extension-configs:
+          - data-id: onethread-cloud-nacos-example.yaml
+            group: DEFAULT_GROUP
+            refresh: true
