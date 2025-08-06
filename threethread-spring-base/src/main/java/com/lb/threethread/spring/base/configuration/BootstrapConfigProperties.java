@@ -49,6 +49,11 @@ public class BootstrapConfigProperties {
     private NacosConfig nacos;
 
     /**
+     * Apollo 配置文件
+     */
+    private ApolloConfig apollo;
+
+    /**
      * Nacos 远程配置文件格式类型
      * <p>
      * 指定Nacos配置文件的格式类型，如properties、yml、yaml等
@@ -88,5 +93,10 @@ public class BootstrapConfigProperties {
          * </p>
          */
         private String group;
+    }
+
+    @Data
+    public static class ApolloConfig {
+        private String namespace;
     }
 }

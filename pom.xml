@@ -25,6 +25,7 @@
         <spring-cloud.version>2022.0.3</spring-cloud.version>
         <spring-cloud-alibaba.version>2022.0.0.0-RC2</spring-cloud-alibaba.version>
         <hutool-all.version>5.8.37</hutool-all.version>
+        <apollo-client-config-data.version>2.4.0</apollo-client-config-data.version>
         <spotless-maven-plugin.version>2.22.1</spotless-maven-plugin.version>
     </properties>
 
@@ -58,6 +59,12 @@
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool-all.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.ctrip.framework.apollo</groupId>
+                <artifactId>apollo-client-config-data</artifactId>
+                <version>${apollo-client-config-data.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
