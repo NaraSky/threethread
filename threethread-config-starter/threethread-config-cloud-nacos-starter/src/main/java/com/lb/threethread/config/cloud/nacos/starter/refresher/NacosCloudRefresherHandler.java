@@ -9,6 +9,7 @@ import com.lb.threethread.core.executor.ThreadPoolExecutorHolder;
 import com.lb.threethread.core.executor.ThreadPoolExecutorProperties;
 import com.lb.threethread.core.executor.support.BlockingQueueTypeEnum;
 import com.lb.threethread.core.executor.support.RejectedPolicyTypeEnum;
+import com.lb.threethread.core.executor.support.ResizableCapacityLinkedBlockingQueue;
 import com.lb.threethread.core.toolkit.ThreadPoolExecutorBuilder;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import com.lb.threethread.spring.base.parser.ConfigParserHandler;
@@ -25,10 +26,7 @@ import org.springframework.boot.context.properties.source.MapConfigurationProper
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Nacos云配置刷新处理器
@@ -42,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * 3. 实现动态线程池的远程配置管理功能
  * </p>
  */
-@Slf4j
+@Slf4j(topic = "OneThreadConfigRefresher")
 @RequiredArgsConstructor
 public class NacosCloudRefresherHandler implements ApplicationRunner {
 
@@ -68,7 +66,7 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
      * 用于格式化输出线程池参数变更信息
      * </p>
      */
-    public static final String CHANGE_THREAD_POOL_TEXT = "[{}] \uD83E\uDDF5 Dynamic thread pool parameter changed:"
+    public static final String CHANGE_THREAD_POOL_TEXT = "[{}] Dynamic thread pool parameter changed:"
             + "\n    corePoolSize: {}"
             + "\n    maximumPoolSize: {}"
             + "\n    capacity: {}"
@@ -193,11 +191,11 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
      * 对比远程配置与当前内存中的配置，判断是否需要更新线程池参数
      * </p>
      *
-     * @param remateProperties 远程配置属性
+     * @param remoteProperties 远程配置属性
      * @return 配置是否发生变化
      */
-    private boolean hasThreadPoolConfigChanged(ThreadPoolExecutorProperties remateProperties) {
-        String threadPoolId = remateProperties.getThreadPoolId();
+    private boolean hasThreadPoolConfigChanged(ThreadPoolExecutorProperties remoteProperties) {
+        String threadPoolId = remoteProperties.getThreadPoolId();
         ThreadPoolExecutorHolder holder = OneThreadRegistry.getHolder(threadPoolId);
         if (holder == null) {
             log.warn("No thread pool found for thread pool id: {}", threadPoolId);
@@ -206,16 +204,21 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
         ThreadPoolExecutor executor = holder.getExecutor();
         ThreadPoolExecutorProperties originalProperties = holder.getExecutorProperties();
 
-        return hasDifference(originalProperties, remateProperties, executor);
+        return hasDifference(originalProperties, remoteProperties, executor);
     }
 
     /**
      * 根据远程配置更新线程池参数
      * <p>
-     * 将远程配置中的参数应用到线程池执行器中
+     * 将远程配置中的参数应用到线程池执行器中，支持动态调整以下参数：
+     * 1. 核心线程数和最大线程数（考虑设置顺序避免异常）
+     * 2. 是否允许核心线程超时
+     * 3. 拒绝策略
+     * 4. 线程空闲存活时间
+     * 5. 队列容量（仅支持ResizableCapacityLinkedBlockingQueue）
      * </p>
      *
-     * @param remoteProperties 远程配置属性
+     * @param remoteProperties 远程配置属性，包含需要更新的线程池参数
      */
     private void updateThreadPoolFromRemoteConfig(ThreadPoolExecutorProperties remoteProperties) {
         String threadPoolId = remoteProperties.getThreadPoolId();
@@ -223,18 +226,22 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
         ThreadPoolExecutor executor = holder.getExecutor();
         ThreadPoolExecutorProperties originalProperties = holder.getExecutorProperties();
 
+        // 更新核心线程数和最大线程数，根据大小关系确定设置顺序避免IllegalArgumentException
         Integer remoteCorePoolSize = remoteProperties.getCorePoolSize();
         Integer remoteMaximumPoolSize = remoteProperties.getMaximumPoolSize();
         if (remoteCorePoolSize != null && remoteMaximumPoolSize != null) {
             int originalMaximumPoolSize = executor.getMaximumPoolSize();
             if (remoteCorePoolSize > originalMaximumPoolSize) {
+                // 如果新的核心线程数大于原来的最大线程数，先设置最大线程数再设置核心线程数
                 executor.setMaximumPoolSize(remoteMaximumPoolSize);
                 executor.setCorePoolSize(remoteCorePoolSize);
             } else {
+                // 否则先设置核心线程数再设置最大线程数
                 executor.setCorePoolSize(remoteCorePoolSize);
                 executor.setMaximumPoolSize(remoteMaximumPoolSize);
             }
         } else {
+            // 单独更新最大线程数或核心线程数
             if (remoteMaximumPoolSize != null) {
                 executor.setMaximumPoolSize(remoteMaximumPoolSize);
             }
@@ -243,20 +250,30 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
             }
         }
 
+        // 更新是否允许核心线程超时设置
         if (remoteProperties.getAllowCoreThreadTimeOut() != null &&
                 !Objects.equals(remoteProperties.getAllowCoreThreadTimeOut(), originalProperties.getAllowCoreThreadTimeOut())) {
             executor.allowCoreThreadTimeOut(remoteProperties.getAllowCoreThreadTimeOut());
         }
 
+        // 更新拒绝策略
         if (remoteProperties.getRejectedHandler() != null &&
                 !Objects.equals(remoteProperties.getRejectedHandler(), originalProperties.getRejectedHandler())) {
             RejectedExecutionHandler handler = RejectedPolicyTypeEnum.createPolicy(remoteProperties.getRejectedHandler());
             executor.setRejectedExecutionHandler(handler);
         }
 
+        // 更新线程空闲存活时间
         if (remoteProperties.getKeepAliveTime() != null &&
                 !Objects.equals(remoteProperties.getKeepAliveTime(), originalProperties.getKeepAliveTime())) {
             executor.setKeepAliveTime(remoteProperties.getKeepAliveTime(), TimeUnit.SECONDS);
+        }
+
+        // 更新队列容量（仅对 ResizableCapacityLinkedBlockingQueue 生效）
+        if (isQueueCapacityChanged(originalProperties, remoteProperties, executor)) {
+            BlockingQueue<Runnable> queue = executor.getQueue();
+            ResizableCapacityLinkedBlockingQueue<?> resizableQueue = (ResizableCapacityLinkedBlockingQueue<?>) queue;
+            resizableQueue.setCapacity(remoteProperties.getQueueCapacity());
         }
     }
 
@@ -267,16 +284,17 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
      * </p>
      *
      * @param originalProperties 原始配置属性
-     * @param remateProperties   远程配置属性
+     * @param remoteProperties   远程配置属性
      * @param executor           线程池执行器
      * @return 是否存在配置差异
      */
-    private boolean hasDifference(ThreadPoolExecutorProperties originalProperties, ThreadPoolExecutorProperties remateProperties, ThreadPoolExecutor executor) {
-        return isChanged(originalProperties.getCorePoolSize(), remateProperties.getCorePoolSize())
-                || isChanged(originalProperties.getMaximumPoolSize(), remateProperties.getMaximumPoolSize())
-                || isChanged(originalProperties.getAllowCoreThreadTimeOut(), remateProperties.getAllowCoreThreadTimeOut())
-                || isChanged(originalProperties.getKeepAliveTime(), remateProperties.getKeepAliveTime())
-                || isChanged(originalProperties.getRejectedHandler(), remateProperties.getRejectedHandler());
+    private boolean hasDifference(ThreadPoolExecutorProperties originalProperties, ThreadPoolExecutorProperties remoteProperties, ThreadPoolExecutor executor) {
+        return isChanged(originalProperties.getCorePoolSize(), remoteProperties.getCorePoolSize())
+                || isChanged(originalProperties.getMaximumPoolSize(), remoteProperties.getMaximumPoolSize())
+                || isChanged(originalProperties.getAllowCoreThreadTimeOut(), remoteProperties.getAllowCoreThreadTimeOut())
+                || isChanged(originalProperties.getKeepAliveTime(), remoteProperties.getKeepAliveTime())
+                || isChanged(originalProperties.getRejectedHandler(), remoteProperties.getRejectedHandler())
+                || isQueueCapacityChanged(originalProperties, remoteProperties, executor);
     }
 
     /**
@@ -292,5 +310,29 @@ public class NacosCloudRefresherHandler implements ApplicationRunner {
      */
     private <T> boolean isChanged(T before, T after) {
         return after != null && !Objects.equals(before, after);
+    }
+
+    /**
+     * 检查队列容量是否发生变化
+     * <p>
+     * 特殊处理队列容量变更检查，只对ResizableCapacityLinkedBlockingQueue类型生效
+     * 因为只有这种队列类型支持运行时动态调整容量
+     * </p>
+     *
+     * @param originalProperties 原始配置属性，包含变更前的队列容量配置
+     * @param remoteProperties   远程配置属性，包含变更后的队列容量配置
+     * @param executor           线程池执行器，用于获取当前实际使用的队列实例
+     * @return 队列容量是否发生变化且队列类型支持动态调整，true表示可以更新队列容量，false表示不能更新
+     */
+    private boolean isQueueCapacityChanged(ThreadPoolExecutorProperties originalProperties,
+                                           ThreadPoolExecutorProperties remoteProperties,
+                                           ThreadPoolExecutor executor) {
+        Integer remoteCapacity = remoteProperties.getQueueCapacity();
+        Integer originalCapacity = originalProperties.getQueueCapacity();
+        BlockingQueue<?> queue = executor.getQueue();
+
+        return remoteCapacity != null
+                && !Objects.equals(remoteCapacity, originalCapacity)
+                && Objects.equals(BlockingQueueTypeEnum.RESIZABLE_CAPACITY_LINKED_BLOCKING_QUEUE.getName(), queue.getClass().getSimpleName());
     }
 }

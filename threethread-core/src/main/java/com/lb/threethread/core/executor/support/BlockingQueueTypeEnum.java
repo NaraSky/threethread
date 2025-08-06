@@ -77,7 +77,7 @@ public enum BlockingQueueTypeEnum {
             return new LinkedTransferQueue<>();
         }
     },
-    
+
     PRIORITY_BLOCKING_QUEUE("PriorityBlockingQueue") {
         @Override
         <T> BlockingQueue<T> of(Integer capacity) {
@@ -87,6 +87,18 @@ public enum BlockingQueueTypeEnum {
         @Override
         <T> BlockingQueue<T> of() {
             return new PriorityBlockingQueue<>();
+        }
+    },
+
+    RESIZABLE_CAPACITY_LINKED_BLOCKING_QUEUE("ResizableCapacityLinkedBlockingQueue") {
+        @Override
+        <T> BlockingQueue<T> of(Integer capacity) {
+            return new ResizableCapacityLinkedBlockingQueue<>(capacity);
+        }
+
+        @Override
+        <T> BlockingQueue<T> of() {
+            return new ResizableCapacityLinkedBlockingQueue<>();
         }
     };
 
@@ -110,7 +122,7 @@ public enum BlockingQueueTypeEnum {
             NAME_TO_ENUM_MAP.put(value.name, value);
         }
     }
-    
+
     public static <T> BlockingQueue<T> createBlockingQueue(String blockingQueueName, Integer capacity) {
         final BlockingQueue<T> of = of(blockingQueueName, capacity);
         if (of != null) {
@@ -119,7 +131,7 @@ public enum BlockingQueueTypeEnum {
 
         throw new IllegalArgumentException("No matching type of blocking queue was found: " + blockingQueueName);
     }
-    
+
     private static <T> BlockingQueue<T> of(String blockingQueueName, Integer capacity) {
         final BlockingQueueTypeEnum typeEnum = NAME_TO_ENUM_MAP.get(blockingQueueName);
         if (typeEnum == null) {
