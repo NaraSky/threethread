@@ -15,6 +15,7 @@
     <modules>
         <module>threethread-nacos-cloud-spring-boot-starter</module>
         <module>threethread-apollo-spring-boot-starter</module>
+        <module>threethread-common-spring-boot-starter</module>
     </modules>
 
 </project>
