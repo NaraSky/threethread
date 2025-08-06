@@ -9,11 +9,11 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>threethread-example</artifactId>
+    <artifactId>threethread-starter</artifactId>
     <packaging>pom</packaging>
 
     <modules>
-        <module>threethread-nacos-cloud-example</module>
+        <module>threethread-nacos-cloud-spring-boot-starter</module>
     </modules>
 
 </project>
