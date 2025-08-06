@@ -1,0 +1,22 @@
+server:
+  port: 18081
+
+spring:
+  application:
+    name: onethread-apollo-example
+  config:
+    import: optional:apollo://application
+
+app:
+  id: onethread-apollo-example
+env: dev
+
+apollo:
+  meta: http://127.0.0.1:8080
+  autoUpdateInjectedSpringProperties: true
+  bootstrap:
+    enabled: true
+    namespaces: application
+    eagerLoad:
+      enabled: true
+  configService: http://127.0.0.1:8080
