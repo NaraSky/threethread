@@ -29,8 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "OneThreadConfigRefresher")
 public class ApolloRefresherHandler extends AbstractDynamicThreadPoolRefresher {
 
-    public ApolloRefresherHandler(BootstrapConfigProperties properties, DingTalkMessageService messageService) {
-        super(properties, messageService);
+    public ApolloRefresherHandler(BootstrapConfigProperties properties, NotifierDispatcher notifierDispatcher) {
+        super(properties, notifierDispatcher);
     }
 
     /**

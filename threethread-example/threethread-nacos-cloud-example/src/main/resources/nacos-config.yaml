@@ -6,6 +6,7 @@ onethread:
     group: DEFAULT_GROUP
   config-file-type: yaml
   notify-platforms:
+    platform: DING
     url: https://oapi.dingtalk.com/robot/send?access_token=f4f2c078b580d2c43a799c30593fc391e33dc606e7f46f438b4a7bd4cd51aba3
   executors:
     - thread-pool-id: onethread-producer

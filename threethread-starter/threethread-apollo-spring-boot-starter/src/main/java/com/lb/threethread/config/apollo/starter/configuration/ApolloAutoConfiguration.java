@@ -39,7 +39,7 @@ public class ApolloAutoConfiguration {
      */
     @Bean
     public ApolloRefresherHandler apolloRefresherHandler(BootstrapConfigProperties properties,
-                                                         DingTalkMessageService messageService) {
-        return new ApolloRefresherHandler(properties, messageService);
+                                                         NotifierDispatcher notifierDispatcher) {
+        return new ApolloRefresherHandler(properties, notifierDispatcher);
     }
 }

@@ -12,48 +12,46 @@ import java.util.Map;
 
 import static com.lb.threethread.core.constant.Constants.DING_CONFIG_CHANGE_MESSAGE_TEXT;
 
-/**
- * 钉钉消息服务类
- * 
- * 用于向钉钉机器人发送线程池配置变更通知
- */
 @Slf4j
-public class DingTalkMessageService {
+public class DingTalkMessageService implements NotifierService {
 
     /**
      * 发送线程池配置变更通知到钉钉机器人
      *
      * @param configChangeDTO 线程池配置变更数据传输对象，包含变更详情和接收人信息
      */
+    @Override
     public void sendChangeMessage(ThreadPoolConfigChangeDTO configChangeDTO) {
-        // 构造发送到钉钉机器人的消息内容
+        // 构造钉钉markdown消息内容
         Map<String, Object> markdown = getStringObjectHashMap(configChangeDTO);
+
+        // 构造@用户手机号列表
         Map<String, Object> at = new HashMap<>();
         at.put("atMobiles", CollectionUtil.newArrayList(configChangeDTO.getReceives().split(",")));
+
+        // 构造钉钉机器人消息请求体
         Map<String, Object> dingTaskMarkdownRequest = new HashMap<>();
         dingTaskMarkdownRequest.put("msgtype", "markdown");
         dingTaskMarkdownRequest.put("markdown", markdown);
         dingTaskMarkdownRequest.put("at", at);
-        
-        // 发送HTTP请求到钉钉机器人
+
         try {
+            // 发送钉钉机器人消息
             String serverUrl = configChangeDTO.getNotifyPlatforms().getUrl();
             String responseBody = HttpUtil.post(serverUrl, JSON.toJSONString(dingTaskMarkdownRequest));
             DingTalkMessageService.DingRobotResponse response = JSON.parseObject(responseBody, DingTalkMessageService.DingRobotResponse.class);
+
+            // 检查消息发送结果
             if (response.getErrcode() != 0) {
                 log.error("Ding failed to send message, reason: {}", response.errmsg);
             }
         } catch (Exception ex) {
+            // 记录消息发送异常
             log.error("Ding failed to send message.", ex);
         }
     }
 
-    /**
-     * 构造发送到钉钉机器人的Markdown格式消息内容
-     *
-     * @param configChangeDTO 线程池配置变更数据传输对象
-     * @return 包含标题和文本内容的Map对象
-     */
+
     private static Map<String, Object> getStringObjectHashMap(ThreadPoolConfigChangeDTO configChangeDTO) {
         Map<String, ThreadPoolConfigChangeDTO.ChangePair<?>> changes = configChangeDTO.getChanges();
         String markdownText = String.format(
@@ -77,20 +75,10 @@ public class DingTalkMessageService {
         return markdown;
     }
 
-    /**
-     * 钉钉机器人响应结果类
-     */
     @Data
     static class DingRobotResponse {
 
-        /**
-         * 错误码
-         */
         private Long errcode;
-        
-        /**
-         * 错误信息
-         */
         private String errmsg;
     }
 }

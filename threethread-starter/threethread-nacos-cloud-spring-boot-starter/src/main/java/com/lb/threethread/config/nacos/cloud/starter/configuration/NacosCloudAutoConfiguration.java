@@ -2,6 +2,7 @@ package com.lb.threethread.config.nacos.cloud.starter.configuration;
 
 import com.lb.threethread.config.nacos.cloud.starter.refresher.NacosCloudRefresherHandler;
 import com.lb.threethread.core.notification.service.DingTalkMessageService;
+import com.lb.threethread.core.notification.service.NotifierDispatcher;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
@@ -32,7 +33,7 @@ public class NacosCloudAutoConfiguration {
      */
     @Bean
     public NacosCloudRefresherHandler nacosCloudRefresherHandler(BootstrapConfigProperties properties,
-                                                                 DingTalkMessageService messageService) {
-        return new NacosCloudRefresherHandler(properties, messageService);
+                                                                 NotifierDispatcher notifierDispatcher) {
+        return new NacosCloudRefresherHandler(properties, notifierDispatcher);
     }
 }

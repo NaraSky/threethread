@@ -78,6 +78,11 @@ public class BootstrapConfigProperties {
     public static class NotifyPlatformsConfig {
 
         /**
+         * 通知类型，比如：DING
+         */
+        private String platform;
+
+        /**
          * 完整 WebHook 地址
          */
         private String url;

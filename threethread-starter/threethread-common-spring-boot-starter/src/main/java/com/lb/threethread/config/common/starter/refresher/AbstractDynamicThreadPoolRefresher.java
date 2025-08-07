@@ -11,6 +11,7 @@ import com.lb.threethread.core.executor.support.RejectedPolicyTypeEnum;
 import com.lb.threethread.core.executor.support.ResizableCapacityLinkedBlockingQueue;
 import com.lb.threethread.core.notification.dto.ThreadPoolConfigChangeDTO;
 import com.lb.threethread.core.notification.service.DingTalkMessageService;
+import com.lb.threethread.core.notification.service.NotifierDispatcher;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import com.lb.threethread.spring.base.parser.ConfigParserHandler;
 import com.lb.threethread.spring.base.support.ApplicationContextHolder;
@@ -62,7 +63,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * 启动配置属性，包含各种配置中心的配置信息
      */
     protected final BootstrapConfigProperties properties;
-    protected final DingTalkMessageService messageService;
+    protected final NotifierDispatcher notifierDispatcher;
 
     /**
      * 注册配置变更监听器，由子类实现具体逻辑
@@ -355,7 +356,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
                 .updateTime(DateUtil.now())
                 .notifyPlatforms(BeanUtil.toBean(properties.getNotifyPlatforms(), ThreadPoolConfigChangeDTO.NotifyPlatformsConfig.class))
                 .build();
-        messageService.sendChangeMessage(configChangeDTO);
+        notifierDispatcher.sendChangeMessage(configChangeDTO);
     }
 
 }
