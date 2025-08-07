@@ -55,26 +55,6 @@ public class ThreadPoolConfigChangeDTO {
      */
     private String updateTime;
 
-    /**
-     * 通知配置
-     */
-    private NotifyPlatformsConfig notifyPlatforms;
-
-    @Data
-    @AllArgsConstructor
-    public static class NotifyPlatformsConfig {
-
-        /**
-         * 通知类型，比如：DING
-         */
-        private String platform;
-
-        /**
-         * 完整 WebHook 地址
-         */
-        private String url;
-    }
-
     @Data
     @AllArgsConstructor
     public static class ChangePair<T> {

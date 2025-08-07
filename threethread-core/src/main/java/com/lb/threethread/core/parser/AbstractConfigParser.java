@@ -1,4 +1,4 @@
-package com.lb.threethread.spring.base.parser;
+package com.lb.threethread.core.parser;
 
 /**
  * 配置解析器抽象类

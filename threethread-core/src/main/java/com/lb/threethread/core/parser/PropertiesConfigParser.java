@@ -1,4 +1,4 @@
-package com.lb.threethread.spring.base.parser;
+package com.lb.threethread.core.parser;
 
 import cn.hutool.core.collection.CollectionUtil;
 

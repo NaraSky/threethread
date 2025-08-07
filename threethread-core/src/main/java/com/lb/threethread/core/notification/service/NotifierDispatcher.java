@@ -1,5 +1,6 @@
 package com.lb.threethread.core.notification.service;
 
+import com.lb.threethread.core.config.BootstrapConfigProperties;
 import com.lb.threethread.core.notification.dto.ThreadPoolConfigChangeDTO;
 
 import java.util.HashMap;
@@ -16,8 +17,8 @@ public class NotifierDispatcher implements NotifierService {
 
     @Override
     public void sendChangeMessage(ThreadPoolConfigChangeDTO configChange) {
-        Optional<NotifierService> notifierService = Optional.ofNullable(configChange.getNotifyPlatforms())
-                .map(ThreadPoolConfigChangeDTO.NotifyPlatformsConfig::getPlatform)
+        Optional<NotifierService> notifierService = Optional.ofNullable(BootstrapConfigProperties.getInstance().getNotifyPlatforms())
+                .map(BootstrapConfigProperties.NotifyPlatformsConfig::getPlatform)
                 .map(each -> NOTIFIER_SERVICE_MAP.get(each));
         if (notifierService.isPresent()) {
             notifierService.get().sendChangeMessage(configChange);

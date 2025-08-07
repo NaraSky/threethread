@@ -7,7 +7,7 @@ import com.ctrip.framework.apollo.ConfigService;
 import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.lb.threethread.config.common.starter.refresher.AbstractDynamicThreadPoolRefresher;
 import com.lb.threethread.core.notification.service.NotifierDispatcher;
-import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
+import com.lb.threethread.core.config.BootstrapConfigProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 

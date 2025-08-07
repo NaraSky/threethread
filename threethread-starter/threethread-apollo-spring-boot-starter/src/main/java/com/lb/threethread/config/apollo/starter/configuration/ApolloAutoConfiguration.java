@@ -1,11 +1,11 @@
 package com.lb.threethread.config.apollo.starter.configuration;
 
 import com.lb.threethread.config.apollo.starter.refresher.ApolloRefresherHandler;
-import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.core.notification.service.NotifierDispatcher;
-import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
+import com.lb.threethread.core.config.BootstrapConfigProperties;
 import com.lb.threethread.spring.base.enable.MarkerConfiguration;
 import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Bean;
  * </p>
  */
 @Configurable
+@AutoConfigureOrder(Integer.MIN_VALUE)
 @ConditionalOnBean(MarkerConfiguration.Marker.class)
 @ConditionalOnProperty(prefix = BootstrapConfigProperties.PREFIX, value = "enable", matchIfMissing = true, havingValue = "true")
 public class ApolloAutoConfiguration {

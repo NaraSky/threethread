@@ -3,6 +3,7 @@ package com.lb.threethread.core.notification.service;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
+import com.lb.threethread.core.config.BootstrapConfigProperties;
 import com.lb.threethread.core.notification.dto.ThreadPoolConfigChangeDTO;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ public class DingTalkMessageService implements NotifierService {
 
         try {
             // 发送钉钉机器人消息
-            String serverUrl = configChangeDTO.getNotifyPlatforms().getUrl();
+            String serverUrl = BootstrapConfigProperties.getInstance().getNotifyPlatforms().getUrl();
             String responseBody = HttpUtil.post(serverUrl, JSON.toJSONString(dingTaskMarkdownRequest));
             DingTalkMessageService.DingRobotResponse response = JSON.parseObject(responseBody, DingTalkMessageService.DingRobotResponse.class);
 

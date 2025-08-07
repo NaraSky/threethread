@@ -10,10 +10,9 @@ import com.lb.threethread.core.executor.support.BlockingQueueTypeEnum;
 import com.lb.threethread.core.executor.support.RejectedPolicyTypeEnum;
 import com.lb.threethread.core.executor.support.ResizableCapacityLinkedBlockingQueue;
 import com.lb.threethread.core.notification.dto.ThreadPoolConfigChangeDTO;
-import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.core.notification.service.NotifierDispatcher;
-import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
-import com.lb.threethread.spring.base.parser.ConfigParserHandler;
+import com.lb.threethread.core.config.BootstrapConfigProperties;
+import com.lb.threethread.core.parser.ConfigParserHandler;
 import com.lb.threethread.spring.base.support.ApplicationContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -102,7 +101,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * 2. 调用registerListener方法注册监听器
      * 3. 调用afterRegister方法
      * </p>
-     * 
+     *
      * @param args 应用启动参数
      * @throws Exception 启动过程中的异常
      */
@@ -161,7 +160,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
             holder.setExecutorProperties(remoteProperties);
 
             // 发送线程池配置变更消息通知
-            sendThreadPoolConfigChangeMessage(properties, originalProperties, remoteProperties);
+            sendThreadPoolConfigChangeMessage(originalProperties, remoteProperties);
 
             // 打印线程池配置变更日志
             log.info(CHANGE_THREAD_POOL_TEXT,
@@ -183,7 +182,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * 2. 获取当前线程池执行器和原始配置
      * 3. 比较各项配置是否发生变化
      * </p>
-     * 
+     *
      * @param remoteProperties 远程配置属性
      * @return 配置是否发生变化
      */
@@ -208,7 +207,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * 2. 先更新拒绝策略、存活时间等简单参数
      * 3. 最后更新队列容量（仅对可调整容量队列生效）
      * </p>
-     * 
+     *
      * @param remoteProperties 远程配置属性
      */
     private void updateThreadPoolFromRemoteConfig(ThreadPoolExecutorProperties remoteProperties) {
@@ -269,10 +268,10 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
 
     /**
      * 检查线程池各项配置是否发生变化
-     * 
+     *
      * @param originalProperties 原始配置属性
-     * @param remoteProperties 远程配置属性
-     * @param executor 线程池执行器
+     * @param remoteProperties   远程配置属性
+     * @param executor           线程池执行器
      * @return 是否存在配置差异
      */
     private boolean hasDifference(ThreadPoolExecutorProperties originalProperties,
@@ -288,10 +287,10 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
 
     /**
      * 检查单个配置项是否发生变化
-     * 
+     *
      * @param before 变更前的值
-     * @param after 变更后的值
-     * @param <T> 配置项类型
+     * @param after  变更后的值
+     * @param <T>    配置项类型
      * @return 是否发生变化
      */
     private <T> boolean isChanged(T before, T after) {
@@ -303,10 +302,10 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * <p>
      * 注意：仅对ResizableCapacityLinkedBlockingQueue类型的队列生效
      * </p>
-     * 
+     *
      * @param originalProperties 原始配置属性
-     * @param remoteProperties 远程配置属性
-     * @param executor 线程池执行器
+     * @param remoteProperties   远程配置属性
+     * @param executor           线程池执行器
      * @return 队列容量是否发生变化
      */
     private boolean isQueueCapacityChanged(ThreadPoolExecutorProperties originalProperties,
@@ -325,11 +324,10 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * 发送线程池配置变更消息
      *
      * @param originalProperties 原始线程池配置属性
-     * @param remoteProperties 远程线程池配置属性
+     * @param remoteProperties   远程线程池配置属性
      */
     @SneakyThrows
-    private void sendThreadPoolConfigChangeMessage(BootstrapConfigProperties properties,
-                                                   ThreadPoolExecutorProperties originalProperties,
+    private void sendThreadPoolConfigChangeMessage(ThreadPoolExecutorProperties originalProperties,
                                                    ThreadPoolExecutorProperties remoteProperties) {
         // 获取环境配置信息
         Environment environment = ApplicationContextHolder.getBean(Environment.class);
@@ -354,7 +352,6 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
                 .workQueue(originalProperties.getWorkQueue())
                 .changes(changes)
                 .updateTime(DateUtil.now())
-                .notifyPlatforms(BeanUtil.toBean(properties.getNotifyPlatforms(), ThreadPoolConfigChangeDTO.NotifyPlatformsConfig.class))
                 .build();
         notifierDispatcher.sendChangeMessage(configChangeDTO);
     }

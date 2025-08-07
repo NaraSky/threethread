@@ -8,7 +8,7 @@ import com.lb.threethread.core.executor.ThreadPoolExecutorProperties;
 import com.lb.threethread.core.executor.support.BlockingQueueTypeEnum;
 import com.lb.threethread.core.executor.support.RejectedPolicyTypeEnum;
 import com.lb.threethread.spring.base.DynamicThreadPool;
-import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
+import com.lb.threethread.core.config.BootstrapConfigProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;

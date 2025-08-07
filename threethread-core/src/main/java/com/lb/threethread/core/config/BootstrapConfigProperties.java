@@ -1,9 +1,8 @@
-package com.lb.threethread.spring.base.configuration;
+package com.lb.threethread.core.config;
 
 import com.lb.threethread.core.executor.ThreadPoolExecutorProperties;
-import com.lb.threethread.spring.base.parser.ConfigFileTypeEnum;
+import com.lb.threethread.core.parser.ConfigFileTypeEnum;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
 
@@ -20,7 +19,6 @@ import java.util.List;
  * </p>
  */
 @Data
-@ConfigurationProperties(prefix = BootstrapConfigProperties.PREFIX)
 public class BootstrapConfigProperties {
 
     /**
@@ -117,5 +115,15 @@ public class BootstrapConfigProperties {
     @Data
     public static class ApolloConfig {
         private String namespace;
+    }
+
+    private static BootstrapConfigProperties INSTANCE = new BootstrapConfigProperties();
+
+    public static BootstrapConfigProperties getInstance() {
+        return INSTANCE;
+    }
+
+    public static void setInstance(BootstrapConfigProperties properties) {
+        INSTANCE = properties;
     }
 }
