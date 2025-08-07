@@ -53,10 +53,8 @@ public class OneThreadRegistry {
      *
      * @param threadPoolId 线程池唯一标识
      * @return 线程池持有者对象
-     * @throws RuntimeException 如果未找到对应线程池
      */
     public static ThreadPoolExecutorHolder getHolder(String threadPoolId) {
-        return Optional.ofNullable(HOLDER_MAP.get(threadPoolId))
-                .orElseThrow(() -> new RuntimeException("No thread pool executor found for id: " + threadPoolId));
+        return HOLDER_MAP.get(threadPoolId);
     }
 }
