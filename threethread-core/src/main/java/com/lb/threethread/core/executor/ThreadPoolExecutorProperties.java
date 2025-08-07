@@ -87,4 +87,20 @@ public class ThreadPoolExecutorProperties {
      * </p>
      */
     private Boolean allowCoreThreadTimeOut;
+
+    /**
+     * 通知配置
+     */
+    private NotifyConfig notify;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NotifyConfig {
+
+        /**
+         * 接收人集合
+         */
+        private String receives;
+    }
 }

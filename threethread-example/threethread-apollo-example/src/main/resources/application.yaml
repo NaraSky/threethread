@@ -6,6 +6,8 @@ spring:
     name: onethread-apollo-example
   config:
     import: optional:apollo://application
+  profiles:
+    active: dev
 
 app:
   id: onethread-apollo-example

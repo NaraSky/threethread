@@ -1,6 +1,7 @@
 package com.lb.threethread.config.nacos.cloud.starter.configuration;
 
 import com.lb.threethread.config.nacos.cloud.starter.refresher.NacosCloudRefresherHandler;
+import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
@@ -30,7 +31,8 @@ public class NacosCloudAutoConfiguration {
      * @return NacosCloudRefresherHandler实例
      */
     @Bean
-    public NacosCloudRefresherHandler nacosCloudRefresherHandler(BootstrapConfigProperties properties) {
-        return new NacosCloudRefresherHandler(properties);
+    public NacosCloudRefresherHandler nacosCloudRefresherHandler(BootstrapConfigProperties properties,
+                                                                 DingTalkMessageService messageService) {
+        return new NacosCloudRefresherHandler(properties, messageService);
     }
 }

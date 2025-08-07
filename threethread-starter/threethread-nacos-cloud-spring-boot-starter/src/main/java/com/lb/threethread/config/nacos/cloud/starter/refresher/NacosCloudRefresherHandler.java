@@ -6,6 +6,7 @@ import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.lb.threethread.config.common.starter.refresher.AbstractDynamicThreadPoolRefresher;
 import com.lb.threethread.core.executor.support.BlockingQueueTypeEnum;
+import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.core.toolkit.ThreadPoolExecutorBuilder;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import com.lb.threethread.spring.base.support.ApplicationContextHolder;
@@ -37,14 +38,8 @@ public class NacosCloudRefresherHandler extends AbstractDynamicThreadPoolRefresh
      */
     private ConfigService configService;
 
-    /**
-     * 构造函数
-     * 
-     * @param properties 启动配置属性，包含Nacos配置信息
-     */
-    public NacosCloudRefresherHandler(BootstrapConfigProperties properties) {
-        super(properties);
-        // 从Spring容器中获取Nacos配置服务实例
+    public NacosCloudRefresherHandler(BootstrapConfigProperties properties, DingTalkMessageService messageService) {
+        super(properties, messageService);
         configService = ApplicationContextHolder.getBean(NacosConfigProperties.class).configServiceInstance();
     }
 

@@ -62,12 +62,26 @@ public class BootstrapConfigProperties {
     private ConfigFileTypeEnum configFileType;
 
     /**
+     * 通知配置
+     */
+    private NotifyPlatformsConfig notifyPlatforms;
+
+    /**
      * 线程池配置集合
      * <p>
      * 包含多个线程池的配置信息，用于批量创建和管理线程池
      * </p>
      */
     private List<ThreadPoolExecutorProperties> executors;
+
+    @Data
+    public static class NotifyPlatformsConfig {
+
+        /**
+         * 完整 WebHook 地址
+         */
+        private String url;
+    }
 
     /**
      * Nacos配置内部类

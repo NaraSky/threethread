@@ -1,14 +1,19 @@
 package com.lb.threethread.config.common.starter.refresher;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import com.lb.threethread.core.executor.OneThreadRegistry;
 import com.lb.threethread.core.executor.ThreadPoolExecutorHolder;
 import com.lb.threethread.core.executor.ThreadPoolExecutorProperties;
 import com.lb.threethread.core.executor.support.BlockingQueueTypeEnum;
 import com.lb.threethread.core.executor.support.RejectedPolicyTypeEnum;
 import com.lb.threethread.core.executor.support.ResizableCapacityLinkedBlockingQueue;
+import com.lb.threethread.core.notification.dto.ThreadPoolConfigChangeDTO;
+import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import com.lb.threethread.spring.base.parser.ConfigParserHandler;
+import com.lb.threethread.spring.base.support.ApplicationContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +23,19 @@ import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
+import org.springframework.core.env.Environment;
 
+import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static com.lb.threethread.core.constant.Constants.CHANGE_DELIMITER;
+import static com.lb.threethread.core.constant.Constants.CHANGE_THREAD_POOL_TEXT;
 
 /**
  * 动态线程池刷新器抽象类
@@ -51,6 +62,7 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * 启动配置属性，包含各种配置中心的配置信息
      */
     protected final BootstrapConfigProperties properties;
+    protected final DingTalkMessageService messageService;
 
     /**
      * 注册配置变更监听器，由子类实现具体逻辑
@@ -101,22 +113,6 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
     }
 
     /**
-     * 线程池参数变更日志格式模板
-     */
-    public static final String CHANGE_THREAD_POOL_TEXT = "[{}] Dynamic thread pool parameter changed:"
-            + "\n    corePoolSize: {}"              // 核心线程数变更信息
-            + "\n    maximumPoolSize: {}"           // 最大线程数变更信息
-            + "\n    capacity: {}"                  // 队列容量变更信息
-            + "\n    keepAliveTime: {}"             // 空闲线程存活时间变更信息
-            + "\n    rejectedType: {}"              // 拒绝策略变更信息
-            + "\n    allowCoreThreadTimeOut: {}";   // 核心线程是否允许超时变更信息
-    
-    /**
-     * 配置变更前后值的分隔符模板
-     */
-    public static final String CHANGE_DELIMITER = "%s => %s";
-
-    /**
      * 刷新线程池配置
      * <p>
      * 处理流程：
@@ -162,6 +158,11 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
             ThreadPoolExecutorHolder holder = OneThreadRegistry.getHolder(threadPoolId);
             ThreadPoolExecutorProperties originalProperties = holder.getExecutorProperties();
             holder.setExecutorProperties(remoteProperties);
+
+            // 发送线程池配置变更消息通知
+            sendThreadPoolConfigChangeMessage(properties, originalProperties, remoteProperties);
+
+            // 打印线程池配置变更日志
             log.info(CHANGE_THREAD_POOL_TEXT,
                     threadPoolId,
                     String.format(CHANGE_DELIMITER, originalProperties.getCorePoolSize(), remoteProperties.getCorePoolSize()),
@@ -273,7 +274,9 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
      * @param executor 线程池执行器
      * @return 是否存在配置差异
      */
-    private boolean hasDifference(ThreadPoolExecutorProperties originalProperties, ThreadPoolExecutorProperties remoteProperties, ThreadPoolExecutor executor) {
+    private boolean hasDifference(ThreadPoolExecutorProperties originalProperties,
+                                  ThreadPoolExecutorProperties remoteProperties,
+                                  ThreadPoolExecutor executor) {
         return isChanged(originalProperties.getCorePoolSize(), remoteProperties.getCorePoolSize())
                 || isChanged(originalProperties.getMaximumPoolSize(), remoteProperties.getMaximumPoolSize())
                 || isChanged(originalProperties.getAllowCoreThreadTimeOut(), remoteProperties.getAllowCoreThreadTimeOut())
@@ -316,4 +319,43 @@ public abstract class AbstractDynamicThreadPoolRefresher implements ApplicationR
                 && !Objects.equals(remoteCapacity, originalCapacity)
                 && Objects.equals(BlockingQueueTypeEnum.RESIZABLE_CAPACITY_LINKED_BLOCKING_QUEUE.getName(), queue.getClass().getSimpleName());
     }
+
+    /**
+     * 发送线程池配置变更消息
+     *
+     * @param originalProperties 原始线程池配置属性
+     * @param remoteProperties 远程线程池配置属性
+     */
+    @SneakyThrows
+    private void sendThreadPoolConfigChangeMessage(BootstrapConfigProperties properties,
+                                                   ThreadPoolExecutorProperties originalProperties,
+                                                   ThreadPoolExecutorProperties remoteProperties) {
+        // 获取环境配置信息
+        Environment environment = ApplicationContextHolder.getBean(Environment.class);
+        String active = environment.getProperty("spring.profiles.active", "dev");
+        String applicationName = environment.getProperty("spring.application.name");
+
+        // 构建配置变更映射表
+        Map<String, ThreadPoolConfigChangeDTO.ChangePair<?>> changes = new HashMap<>();
+        changes.put("corePoolSize", new ThreadPoolConfigChangeDTO.ChangePair<>(originalProperties.getCorePoolSize(), remoteProperties.getCorePoolSize()));
+        changes.put("maximumPoolSize", new ThreadPoolConfigChangeDTO.ChangePair<>(originalProperties.getMaximumPoolSize(), remoteProperties.getMaximumPoolSize()));
+        changes.put("queueCapacity", new ThreadPoolConfigChangeDTO.ChangePair<>(originalProperties.getQueueCapacity(), remoteProperties.getQueueCapacity()));
+        changes.put("rejectedHandler", new ThreadPoolConfigChangeDTO.ChangePair<>(originalProperties.getRejectedHandler(), remoteProperties.getRejectedHandler()));
+        changes.put("keepAliveTime", new ThreadPoolConfigChangeDTO.ChangePair<>(originalProperties.getKeepAliveTime(), remoteProperties.getKeepAliveTime()));
+
+        // 构建线程池配置变更DTO并发送消息
+        ThreadPoolConfigChangeDTO configChangeDTO = ThreadPoolConfigChangeDTO.builder()
+                .active(active)
+                .identify(InetAddress.getLocalHost().getHostAddress())
+                .applicationName(applicationName)
+                .threadPoolId(originalProperties.getThreadPoolId())
+                .receives(remoteProperties.getNotify().getReceives())
+                .workQueue(originalProperties.getWorkQueue())
+                .changes(changes)
+                .updateTime(DateUtil.now())
+                .notifyPlatforms(BeanUtil.toBean(properties.getNotifyPlatforms(), ThreadPoolConfigChangeDTO.NotifyPlatformsConfig.class))
+                .build();
+        messageService.sendChangeMessage(configChangeDTO);
+    }
+
 }

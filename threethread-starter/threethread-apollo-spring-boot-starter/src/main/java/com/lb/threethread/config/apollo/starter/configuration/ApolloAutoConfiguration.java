@@ -1,6 +1,7 @@
 package com.lb.threethread.config.apollo.starter.configuration;
 
 import com.lb.threethread.config.apollo.starter.refresher.ApolloRefresherHandler;
+import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +38,8 @@ public class ApolloAutoConfiguration {
      * @return ApolloRefresherHandler实例
      */
     @Bean
-    public ApolloRefresherHandler apolloRefresherHandler(BootstrapConfigProperties properties) {
-        return new ApolloRefresherHandler(properties);
+    public ApolloRefresherHandler apolloRefresherHandler(BootstrapConfigProperties properties,
+                                                         DingTalkMessageService messageService) {
+        return new ApolloRefresherHandler(properties, messageService);
     }
 }

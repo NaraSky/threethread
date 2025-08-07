@@ -14,6 +14,7 @@
 
     <modules>
         <module>threethread-nacos-cloud-example</module>
+        <module>threethread-apollo-example</module>
     </modules>
 
 </project>

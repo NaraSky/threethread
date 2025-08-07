@@ -6,6 +6,7 @@ import com.ctrip.framework.apollo.ConfigFile;
 import com.ctrip.framework.apollo.ConfigService;
 import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.lb.threethread.config.common.starter.refresher.AbstractDynamicThreadPoolRefresher;
+import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.spring.base.configuration.BootstrapConfigProperties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "OneThreadConfigRefresher")
 public class ApolloRefresherHandler extends AbstractDynamicThreadPoolRefresher {
 
-    /**
-     * 构造函数
-     * 
-     * @param properties 启动配置属性，包含Apollo配置信息
-     */
-    public ApolloRefresherHandler(BootstrapConfigProperties properties) {
-        super(properties);
+    public ApolloRefresherHandler(BootstrapConfigProperties properties, DingTalkMessageService messageService) {
+        super(properties, messageService);
     }
 
     /**

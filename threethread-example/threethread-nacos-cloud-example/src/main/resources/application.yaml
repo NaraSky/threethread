@@ -6,6 +6,9 @@ spring:
     name: onethread-nacos-cloud-example
   config:
     import: optional:nacos:onethread-nacos-cloud-example.yaml
+  profiles:
+    active: dev
+
   cloud:
     nacos:
       config:

@@ -5,6 +5,8 @@ onethread:
     data-id: onethread-nacos-cloud-example.yaml
     group: DEFAULT_GROUP
   config-file-type: yaml
+  notify-platforms:
+    url: https://oapi.dingtalk.com/robot/send?access_token=f4f2c078b580d2c43a799c30593fc391e33dc606e7f46f438b4a7bd4cd51aba3
   executors:
     - thread-pool-id: onethread-producer
       core-pool-size: 12
@@ -14,6 +16,8 @@ onethread:
       queue-capacity: 10000
       rejected-handler: CallerRunsPolicy
       allow-core-thread-time-out: false
+      notify:
+        receives: xxx
     - thread-pool-id: onethread-consumer
       core-pool-size: 10
       maximum-pool-size: 20
@@ -22,3 +26,5 @@ onethread:
       queue-capacity: 1024
       rejected-handler: AbortPolicy
       allow-core-thread-time-out: true
+      notify:
+        receives: xxx

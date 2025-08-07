@@ -1,5 +1,6 @@
 package com.lb.threethread.spring.base.configuration;
 
+import com.lb.threethread.core.notification.service.DingTalkMessageService;
 import com.lb.threethread.spring.base.support.ApplicationContextHolder;
 import com.lb.threethread.spring.base.support.OneThreadBeanPostProcessor;
 import org.springframework.beans.factory.annotation.Configurable;
@@ -33,5 +34,10 @@ public class OneThreadBaseConfiguration {
     @DependsOn("applicationContextHolder")
     public OneThreadBeanPostProcessor oneThreadBeanPostProcessor(BootstrapConfigProperties properties) {
         return new OneThreadBeanPostProcessor(properties);
+    }
+
+    @Bean
+    public DingTalkMessageService dingTalkMessageService() {
+        return new DingTalkMessageService();
     }
 }
